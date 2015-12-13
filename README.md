@@ -5,7 +5,7 @@ I use this for my raspberry pi, but it should work on any debian or derivative
 It uses initramfs, stock raspbian doesn't use one, so step one would be to
 get initramfs working. Something like
 
-`mkinitramfs -o /boot/init.gz
+`mkinitramfs -o /boot/init.gz`
 
 then add to /boot/config.txt
 
@@ -28,7 +28,7 @@ copy the following files
 
 then rerun
 
-`initramfs -o /boot/init.gz
+`initramfs -o /boot/init.gz`
 
 add to .bashrc
 
