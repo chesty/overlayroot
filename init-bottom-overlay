@@ -1,0 +1,67 @@
+#!/bin/sh
+
+PREREQ=""
+prereqs()
+{
+   echo "$PREREQ"
+}
+
+case $1 in
+prereqs)
+   prereqs
+   exit 0
+   ;;
+esac
+
+. /scripts/functions
+log_begin_msg "Starting overlay"
+log_end_msg
+
+# default is for the activity light to blink on sd card access
+# but with tmpfs overlay there's not as much activity
+echo cpu0 > /sys/class/leds/led0/trigger
+
+mkdir -p /overlay
+
+# if we have a filesystem label of overlaytmp
+# use that as the overlay, otherwise use tmpfs.
+# overlaytmp is semi permanent, it can get wiped though.
+# also, overlaytmp on usb doesn't get unmounted.
+# i don't have a head to watch shutdown messages
+# so I don't know why. which means if you put
+# overlaytmp on usb, it's probably going to get
+# formated every boot, which will slow boot speed
+OLDEV=`blkid -L overlaytmp`
+if [ -z "${OLDEV}" ]; then
+	mount -t tmpfs tmpfs /overlay
+else
+	_checkfs_once ${OLDEV} /overlay \
+	mke2fs -FL overlaytmp -t ext4 -E lazy_itable_init,lazy_journal_init ${OLDEV}
+	mount ${OLDEV} /overlay
+fi
+
+# if you sudo touch /overlay/reformatoverlay
+# next reboot will give you a fresh /overlay
+if [ -f /overlay/reformatoverlay ]; then
+	umount /overlay
+	mke2fs -FL overlaytmp -t ext4 -E lazy_itable_init,lazy_journal_init ${OLDEV}
+	mount ${OLDEV} /overlay
+fi
+
+mkdir -p /overlay/upper
+mkdir -p /overlay/work
+mkdir -p /overlay/lower
+
+# make the readonly root available
+mount -n -o move ${rootmnt} /overlay/lower
+mount -t overlay overlay -olowerdir=/overlay/lower,upperdir=/overlay/upper,workdir=/overlay/work ${rootmnt}
+
+mkdir -p ${rootmnt}/overlay
+mount -n -o rbind /overlay ${rootmnt}/overlay
+
+# fix up fstab
+cp ${rootmnt}/etc/fstab ${rootmnt}/etc/fstab.orig
+awk '$2 != "/" {print $0}' ${rootmnt}/etc/fstab.orig > ${rootmnt}/etc/fstab
+awk '$2 == "'${rootmnt}'" { $2 = "/" ; print $0}' /etc/mtab >> ${rootmnt}/etc/fstab
+
+exit 0

@@ -1,0 +1,36 @@
+#!/bin/sh
+
+if [ -z "$1" ]; then
+	ROOT=/overlay/lower
+	mount -o remount,rw ${ROOT}
+	mount -o remount,rw /boot
+else
+	ROOT=$1
+fi
+
+if [ -d ${ROOT}/proc ]; then
+	mount -t proc proc ${ROOT}/proc
+fi
+
+if [ -d ${ROOT}/sys ]; then
+	mount -t sysfs sys ${ROOT}/sys
+fi
+
+for DIR in dev dev/pts boot; do
+	if [ -d ${ROOT}/${DIR} ]; then
+		mount -o bind /${DIR} ${ROOT}/${DIR}
+	fi
+done
+
+IMCHROOTED=${ROOT} chroot ${ROOT}
+
+umount ${ROOT}/proc
+umount ${ROOT}/sys
+
+for DIR in dev/pts dev boot; do
+	umount ${ROOT}/${DIR}
+done
+
+mount -o remount,ro /boot
+mount -o remount,ro ${ROOT}
+

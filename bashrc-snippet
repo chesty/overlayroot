@@ -1,0 +1,3 @@
+if [ ! -z "${IMCHROOTED}" ]; then
+        PS1="chroot(${IMCHROOTED})\w:# "
+fi
