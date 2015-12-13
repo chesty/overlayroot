@@ -20,6 +20,7 @@ overlay
 copy the following files
 
 hooks-overlay to /etc/initramfs-tools/hooks/
+
 init-bottom-overlay to /etc/initramfs-tools/scripts/init-bottom/
 
 then rerun
