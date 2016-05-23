@@ -5,7 +5,7 @@ I use this for my raspberry pi, but it should work on any debian or derivative
 It uses initramfs, stock raspbian doesn't use one, so step one would be to
 get initramfs working. Something like
 
-`mkinitramfs -o /boot/init.gz`
+`sudo mkinitramfs -o /boot/init.gz`
 
 then add to /boot/config.txt
 
@@ -26,9 +26,13 @@ copy the following files
 - hooks-overlay to /etc/initramfs-tools/hooks/
 - init-bottom-overlay to /etc/initramfs-tools/scripts/init-bottom/
 
+install busybox
+
+`sudo apt-get install busybox`
+
 then rerun
 
-`initramfs -o /boot/init.gz`
+`sudo mkinitramfs -o /boot/init.gz`
 
 add to .bashrc
 
