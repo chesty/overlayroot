@@ -35,7 +35,7 @@ OLDEV=`blkid -L overlaytmp`
 if [ -z "${OLDEV}" ]; then
 	mount -t tmpfs tmpfs /overlay
 else
-	_checkfs_once ${OLDEV} /overlay \
+	_checkfs_once ${OLDEV} /overlay >> /log.txt 2>&1 ||  \
 	mke2fs -FL overlaytmp -t ext4 -E lazy_itable_init,lazy_journal_init ${OLDEV}
 	mount ${OLDEV} /overlay
 fi
