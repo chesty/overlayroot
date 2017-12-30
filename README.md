@@ -4,7 +4,9 @@ mounts an overlay filesystem over the root filesystem
 I use this for my Raspberry Pi, but it should work on any Debian or derivative.
 It uses initramfs. Stock Raspbian doesn't use one so step one would be to get initramfs working. Something like:
 
-`sudo mkinitramfs -o /boot/init.gz`
+```bash
+sudo mkinitramfs -o /boot/init.gz
+```
 
 Add to /boot/config.txt
 ```bash
@@ -29,7 +31,9 @@ sudo apt-get install busybox
 
 then rerun
 
-`sudo mkinitramfs -o /boot/init.gz`
+```bash
+sudo mkinitramfs -o /boot/init.gz
+```
 
 add to .bashrc
 
