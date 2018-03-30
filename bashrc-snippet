@@ -1,3 +1,6 @@
 if [ ! -z "${IMCHROOTED}" ]; then
         PS1="chroot(${IMCHROOTED})\w:# "
+else
+        PS1="${debian_chroot:+($debian_chroot)}\u@\h:\w (RO)# "
 fi
+
