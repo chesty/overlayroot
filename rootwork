@@ -1,7 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 
 SUDO=""
-if [ "$UID" != "0" ]; then
+if [ $UID -gt 0 ]; then
     SUDO=sudo
 fi
 
@@ -21,18 +21,19 @@ if [ -d ${ROOT}/sys ]; then
         $SUDO mount -t sysfs sys ${ROOT}/sys
 fi
 
-for DIR in dev dev/pts boot; do
+for DIR in dev dev/pts boot run; do
         if [ -d ${ROOT}/${DIR} ]; then
                 $SUDO mount -o bind /${DIR} ${ROOT}/${DIR}
         fi
 done
 
-$SUDO IMCHROOTED=${ROOT} chroot ${ROOT}
+export IMCHROOTED=${ROOT}
+$SUDO chroot ${ROOT}
 
 $SUDO umount ${ROOT}/proc
 $SUDO umount ${ROOT}/sys
 
-for DIR in dev/pts dev boot; do
+for DIR in dev/pts dev boot run; do
         $SUDO umount ${ROOT}/${DIR}
 done
 
