@@ -14,6 +14,13 @@ prereqs)
 esac
 
 . /scripts/functions
+
+if grep -q -E '(^|\s)skipoverlay(\s|$)' /proc/cmdline; then
+	log_begin_msg "Skipping overlay, found 'skipoverlay' in cmdline"
+	log_end_msg
+	exit 0
+fi
+
 log_begin_msg "Starting overlay"
 log_end_msg
 
