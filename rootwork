@@ -1,41 +1,42 @@
 #!/bin/bash
 
+# This isn't really necessary but I don't think it does any harm
 SUDO=""
 if [ $UID -gt 0 ]; then
     SUDO=sudo
 fi
 
 if [ -z "$1" ]; then
-        ROOT=/overlay/lower
-        $SUDO mount -o remount,rw ${ROOT}
-        $SUDO mount -o remount,rw /boot
+    ROOT=/overlay/lower
+    ${SUDO} mount -o remount,rw ${ROOT}
+    ${SUDO} mount -o remount,rw /boot
 else
-        ROOT=$1
+    ROOT=$1
 fi
 
 if [ -d ${ROOT}/proc ]; then
-        $SUDO mount -t proc proc ${ROOT}/proc
+    ${SUDO} mount -t proc proc ${ROOT}/proc
 fi
 
 if [ -d ${ROOT}/sys ]; then
-        $SUDO mount -t sysfs sys ${ROOT}/sys
+    ${SUDO} mount -t sysfs sys ${ROOT}/sys
 fi
 
 for DIR in dev dev/pts boot run; do
-        if [ -d ${ROOT}/${DIR} ]; then
-                $SUDO mount -o bind /${DIR} ${ROOT}/${DIR}
-        fi
+    if [ -d ${ROOT}/${DIR} ]; then
+        ${SUDO} mount -o bind /${DIR} ${ROOT}/${DIR}
+    fi
 done
 
 export IMCHROOTED=${ROOT}
-$SUDO chroot ${ROOT}
+${SUDO} IMCHROOTED=${ROOT} chroot ${ROOT}
 
-$SUDO umount ${ROOT}/proc
-$SUDO umount ${ROOT}/sys
+${SUDO} umount ${ROOT}/proc
+${SUDO} umount ${ROOT}/sys
 
 for DIR in dev/pts dev boot run; do
-        $SUDO umount ${ROOT}/${DIR}
+        ${SUDO} umount ${ROOT}/${DIR}
 done
 
-$SUDO mount -o remount,ro /boot
-$SUDO mount -o remount,ro ${ROOT}
+${SUDO} mount -o remount,ro /boot
+${SUDO} mount -o remount,ro ${ROOT}
