@@ -1,42 +1,57 @@
 #!/bin/bash
 
-# This isn't really necessary but I don't think it does any harm
-SUDO=""
-if [ $UID -gt 0 ]; then
-    SUDO=sudo
-fi
 
 if [ -z "$1" ]; then
-    ROOT=/overlay/lower
-    ${SUDO} mount -o remount,rw ${ROOT}
-    ${SUDO} mount -o remount,rw /boot
+    ROOT="/overlay/lower"
 else
-    ROOT=$1
+    ROOT="$1"
 fi
 
-if [ -d ${ROOT}/proc ]; then
-    ${SUDO} mount -t proc proc ${ROOT}/proc
+if [ ! -d "${ROOT}" ]; then
+    echo "${ROOT} directory not found"
+    exit 1
 fi
 
-if [ -d ${ROOT}/sys ]; then
-    ${SUDO} mount -t sysfs sys ${ROOT}/sys
+sudo mount -o remount,rw "${ROOT}" || { echo "error remounting ${ROOT} rw"; exit 1; }
+
+if [ -d /boot ]; then
+    sudo mount -o remount,rw /boot || { echo "error remounting /boot rw"; exit 1; }
+fi
+
+if [ -d "${ROOT}"/proc ]; then
+    sudo mount -t proc proc "${ROOT}"/proc
+fi
+
+if [ -d "${ROOT}"/sys ]; then
+    sudo mount -t sysfs sys "${ROOT}"/sys
 fi
 
 for DIR in dev dev/pts boot run; do
-    if [ -d ${ROOT}/${DIR} ]; then
-        ${SUDO} mount -o bind /${DIR} ${ROOT}/${DIR}
+    if [ -d "${ROOT}"/"${DIR}" ]; then
+        sudo mount -o bind /"${DIR}" "${ROOT}"/"${DIR}"
     fi
 done
 
-export IMCHROOTED=${ROOT}
-${SUDO} IMCHROOTED=${ROOT} chroot ${ROOT}
+sudo IMCHROOTED="${ROOT}" chroot "${ROOT}"
 
-${SUDO} umount ${ROOT}/proc
-${SUDO} umount ${ROOT}/sys
+if [ -d "${ROOT}"/proc ]; then
+    sudo umount "${ROOT}"/proc
+fi
+
+if [ -d "${ROOT}"/sys ]; then
+    sudo umount "${ROOT}"/sys
+fi
 
 for DIR in dev/pts dev boot run; do
-        ${SUDO} umount ${ROOT}/${DIR}
+    if [ -d "${ROOT}"/"${DIR}" ]; then
+        sudo umount "${ROOT}"/"${DIR}"
+    fi
 done
 
-${SUDO} mount -o remount,ro /boot
-${SUDO} mount -o remount,ro ${ROOT}
+if [ -d /boot ]; then
+    sudo mount -o remount,ro /boot
+fi
+
+sudo mount -o remount,ro "${ROOT}"
+
+exit 0
