@@ -14,7 +14,7 @@ fi
 
 sudo mount -o remount,rw "${ROOT}" || { echo "error remounting ${ROOT} rw"; exit 1; }
 
-if [ -d /boot ]; then
+if mountpoint -q /boot; then
     sudo mount -o remount,rw /boot || { echo "error remounting /boot rw"; exit 1; }
 fi
 
@@ -34,21 +34,21 @@ done
 
 sudo IMCHROOTED="${ROOT}" chroot "${ROOT}"
 
-if [ -d "${ROOT}"/proc ]; then
+if mountpoint -q "${ROOT}"/proc; then
     sudo umount "${ROOT}"/proc
 fi
 
-if [ -d "${ROOT}"/sys ]; then
+if mountpoint -q "${ROOT}"/sys; then
     sudo umount "${ROOT}"/sys
 fi
 
 for DIR in dev/pts dev boot run; do
-    if [ -d "${ROOT}"/"${DIR}" ]; then
+    if mountpoint -q "${ROOT}"/"${DIR}"; then
         sudo umount "${ROOT}"/"${DIR}"
     fi
 done
 
-if [ -d /boot ]; then
+if mountpoint -q /boot; then
     sudo mount -o remount,ro /boot
 fi
 
