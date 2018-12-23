@@ -9,12 +9,15 @@ if [ "$(id -u)" != "0" ]; then
   exit 1
 fi
 
-
 mkinitramfs -o /boot/init.gz
 
-echo initramfs init.gz >> /boot/config.txt
+if ! grep -q "^initramfs " /boot/config.txt; then
+    echo initramfs init.gz >> /boot/config.txt
+fi
 
-echo overlay >> /etc/initramfs-tools/modules
+if ! grep -q "^overlay" /etc/initramfs-tools/modules; then
+    echo overlay >> /etc/initramfs-tools/modules
+fi
 
 cp hooks-overlay /etc/initramfs-tools/hooks/
 
