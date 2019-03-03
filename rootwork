@@ -37,5 +37,6 @@ if mountpoint -q /boot; then
 fi
 
 sudo mount -o remount,ro "${ROOT}"
+sudo mount -t devpts devpts /dev/pts
 
 exit 0
