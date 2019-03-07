@@ -1,5 +1,8 @@
 #!/bin/bash
 
+if [ `id -u` -gt 0 ]; then
+    exec sudo "$0" "$@"
+fi
 
 if [ -z "$1" ]; then
     ROOT="/overlay/lower"
@@ -7,35 +10,35 @@ else
     ROOT="$1"
 fi
 
-if [ ! -d "${ROOT}" ]; then
-    echo "${ROOT} directory not found"
+if [ ! -d "$ROOT" ]; then
+    echo "$ROOT directory not found"
     exit 1
 fi
 
-sudo mount -o remount,rw "${ROOT}" || { echo "error remounting ${ROOT} rw"; exit 1; }
+mount -o remount,rw "$ROOT" || { echo "error remounting $ROOT rw"; exit 1; }
+test -d /boot && mountpoint -q /boot && mount -o remount,rw /boot || { echo "error remounting /boot rw"; exit 1; }
 
-if mountpoint -q /boot; then
-    sudo mount -o remount,rw /boot || { echo "error remounting /boot rw"; exit 1; }
-fi
-
-for DIR in dev boot run proc sys; do
-    if [ -d "${ROOT}"/"${DIR}" ] && ! mountpoint -q "${ROOT}"/"${DIR}"; then
-        sudo mount --rbind /"${DIR}" "${ROOT}"/"${DIR}"
-    fi
+for DIR in boot run; do
+    test -d "/$DIR" && mountpoint -q "/$DIR" && test -d "$ROOT/$DIR" && ! mountpoint -q "$ROOT/$DIR" && mount --rbind "/$DIR" "$ROOT/$DIR"
 done
 
-sudo IMCHROOTED="${ROOT}" chroot "${ROOT}"
+test -d /sys && mountpoint -q /sys && test -d "$ROOT/sys" && ! mountpoint -q "$ROOT/sys" && mount -t sysfs sysfs "$ROOT/sys"
+test -d /proc && mountpoint -q /proc && test -d "$ROOT/proc" && ! mountpoint -q "$ROOT/proc" && mount -t proc proc "$ROOT/proc"
+test -d /dev && mountpoint -q /dev && test -d "$ROOT/dev" && ! mountpoint -q "$ROOT/dev" && mount -t devtmpfs devtmpfs "$ROOT/dev"
 
-for DIR in run proc sys boot dev; do
-    if mountpoint -q "${ROOT}"/"${DIR}"; then
-        sudo umount -lf "${ROOT}"/"${DIR}" 2>/dev/null
-    fi
+IMCHROOTED="$ROOT" chroot "$ROOT"
+
+test -d "$ROOT/sys" && mountpoint -q "$ROOT/sys" && umount -f "$ROOT/sys"
+test -d "$ROOT/proc" && mountpoint -q "$ROOT/proc" && umount -f "$ROOT/proc"
+test -d "$ROOT/dev" && mountpoint -q "$ROOT/dev" && umount -f "$ROOT/dev"
+
+# with mount --rbind /run $ROOT/run, umounting $ROOT/run is problematic as it's busy and if you umount -lf it umounts directories in /run/.
+# I think because / is an overlay of $ROOT. So we don't unmount $ROOT/run
+for DIR in boot; do
+    test -d "$ROOT/$DIR" && mountpoint -q "$ROOT/$DIR" && umount -lf "$ROOT/$DIR"
 done
 
-if mountpoint -q /boot; then
-    sudo mount -o remount,ro /boot
-fi
-
-sudo mount -o remount,ro "${ROOT}"
+test -d /boot && mountpoint -q /boot && mount -o remount,ro /boot
+mount -o remount,ro "$ROOT"
 
 exit 0
