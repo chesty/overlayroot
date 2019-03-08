@@ -18,27 +18,56 @@ fi
 mount -o remount,rw "$ROOT" || { echo "error remounting $ROOT rw"; exit 1; }
 test -d /boot && mountpoint -q /boot && mount -o remount,rw /boot || { echo "error remounting /boot rw"; exit 1; }
 
+test_mountpoints () {
+    if [ $# != 2 ]; then
+        echo "test_mountpoints <source_mountpoint> <destination_mountpoint>"
+        return 1
+    fi
+
+    SOURCE=$1
+    DESTINATION=$2
+
+    if [ -d "$SOURCE" -a -d "$DESTINATION" ] && mountpoint -q "$SOURCE" && ! mountpoint -q "$DESTINATION"; then
+        return 0
+    else
+        return 1
+    fi
+
+}
+
 for DIR in boot run; do
-    test -d "/$DIR" && mountpoint -q "/$DIR" && test -d "$ROOT/$DIR" && ! mountpoint -q "$ROOT/$DIR" && mount --rbind "/$DIR" "$ROOT/$DIR"
+    test_mountpoints "/$DIR" "$ROOT/$DIR" && \
+        mount --rbind "/$DIR" "$ROOT/$DIR"
 done
 
-test -d /sys && mountpoint -q /sys && test -d "$ROOT/sys" && ! mountpoint -q "$ROOT/sys" && mount -t sysfs sysfs "$ROOT/sys"
-test -d /proc && mountpoint -q /proc && test -d "$ROOT/proc" && ! mountpoint -q "$ROOT/proc" && mount -t proc proc "$ROOT/proc"
-test -d /dev && mountpoint -q /dev && test -d "$ROOT/dev" && ! mountpoint -q "$ROOT/dev" && mount -t devtmpfs devtmpfs "$ROOT/dev"
+test_mountpoints /sys "$ROOT/sys" && \
+    mount -t sysfs sysfs "$ROOT/sys"
+test_mountpoints /proc "$ROOT/proc" && \
+    mount -t proc proc "$ROOT/proc"
+test_mountpoints /dev "$ROOT/dev" && \
+    mount -t devtmpfs devtmpfs "$ROOT/dev"
 
 IMCHROOTED="$ROOT" chroot "$ROOT"
 
-test -d "$ROOT/sys" && mountpoint -q "$ROOT/sys" && umount -f "$ROOT/sys"
-test -d "$ROOT/proc" && mountpoint -q "$ROOT/proc" && umount -f "$ROOT/proc"
-test -d "$ROOT/dev" && mountpoint -q "$ROOT/dev" && umount -f "$ROOT/dev"
+test -d "$ROOT/sys" && mountpoint -q "$ROOT/sys" && \
+    umount -f "$ROOT/sys"
+test -d "$ROOT/proc" && mountpoint -q "$ROOT/proc" && \
+    umount -f "$ROOT/proc"
+test -d "$ROOT/dev" && mountpoint -q "$ROOT/dev" && \
+    umount -f "$ROOT/dev"
 
 # with mount --rbind /run $ROOT/run, umounting $ROOT/run is problematic as it's busy and if you umount -lf it umounts directories in /run/.
 # I think because / is an overlay of $ROOT. So we don't unmount $ROOT/run
 for DIR in boot; do
-    test -d "$ROOT/$DIR" && mountpoint -q "$ROOT/$DIR" && umount -lf "$ROOT/$DIR"
+    test -d "$ROOT/$DIR" && mountpoint -q "$ROOT/$DIR" && \
+        umount -lf "$ROOT/$DIR"
 done
 
-test -d /boot && mountpoint -q /boot && mount -o remount,ro /boot
-mount -o remount,ro "$ROOT"
-
+test -d /boot && mountpoint -q /boot && \
+    mount -o remount,ro /boot
+mount -o remount,ro "$ROOT" || {
+    echo "Failed to remount $ROOT read-only, possibly because of an open file."
+    echo "The best thing to do would be to reboot now"
+    exit $?
+}
 exit 0
