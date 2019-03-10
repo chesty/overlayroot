@@ -15,11 +15,32 @@ if [ ! -d "$ROOT" ]; then
     exit 1
 fi
 
-mount -o remount,rw "$ROOT" || { echo "error remounting $ROOT rw"; exit 1; }
-test -d /boot && mountpoint -q /boot && mount -o remount,rw /boot || { echo "error remounting /boot rw"; exit 1; }
+is_mounted () {
+    if [ -z "$1" ]; then
+        echo "is_mounted <directory>"
+        return 1
+    fi
+    if test -d "$1" && mountpoint -q "$1"; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+not_mounted () {
+    if [ -z "$1" ]; then
+        echo "not_mounted <directory>"
+        return 1
+    fi
+    if test -d "$1" && ! mountpoint -q "$1"; then
+        return 0
+    else
+        return 1
+    fi
+}
 
 test_mountpoints () {
-    if [ $# != 2 ]; then
+    if [ -z "$1" -o -z "$2" ]; then
         echo "test_mountpoints <source_mountpoint> <destination_mountpoint>"
         return 1
     fi
@@ -27,47 +48,62 @@ test_mountpoints () {
     SOURCE=$1
     DESTINATION=$2
 
-    if [ -d "$SOURCE" -a -d "$DESTINATION" ] && mountpoint -q "$SOURCE" && ! mountpoint -q "$DESTINATION"; then
+    if is_mounted "$SOURCE" && not_mounted "$DESTINATION"; then
         return 0
     else
         return 1
     fi
-
 }
 
+mount -o remount,rw "$ROOT" || { echo "error remounting $ROOT rw"; exit 1; }
+if is_mounted /boot; then
+    mount -o remount,rw /boot || { echo "error remounting /boot rw"; exit 1; }
+fi
+
 for DIR in boot run; do
-    test_mountpoints "/$DIR" "$ROOT/$DIR" && \
+    if test_mountpoints "/$DIR" "$ROOT/$DIR"; then
         mount --rbind "/$DIR" "$ROOT/$DIR"
+    fi
 done
 
-test_mountpoints /sys "$ROOT/sys" && \
+if test_mountpoints /sys "$ROOT/sys"; then
     mount -t sysfs sysfs "$ROOT/sys"
-test_mountpoints /proc "$ROOT/proc" && \
+fi
+if test_mountpoints /proc "$ROOT/proc"; then
     mount -t proc proc "$ROOT/proc"
-test_mountpoints /dev "$ROOT/dev" && \
+fi
+if test_mountpoints /dev "$ROOT/dev"; then
     mount -t devtmpfs devtmpfs "$ROOT/dev"
+fi
 
 IMCHROOTED="$ROOT" chroot "$ROOT"
 
-test -d "$ROOT/sys" && mountpoint -q "$ROOT/sys" && \
+if is_mounted "$ROOT/sys"; then
     umount -f "$ROOT/sys"
-test -d "$ROOT/proc" && mountpoint -q "$ROOT/proc" && \
+fi
+if is_mounted "$ROOT/proc"; then
     umount -f "$ROOT/proc"
-test -d "$ROOT/dev" && mountpoint -q "$ROOT/dev" && \
+fi
+if is_mounted "$ROOT/dev"; then
     umount -f "$ROOT/dev"
+fi
 
 # with mount --rbind /run $ROOT/run, umounting $ROOT/run is problematic as it's busy and if you umount -lf it umounts directories in /run/.
 # I think because / is an overlay of $ROOT. So we don't unmount $ROOT/run
 for DIR in boot; do
-    test -d "$ROOT/$DIR" && mountpoint -q "$ROOT/$DIR" && \
+    if is_mounted "$ROOT/$DIR"; then
         umount -lf "$ROOT/$DIR"
+    fi
 done
 
-test -d /boot && mountpoint -q /boot && \
+if is_mounted /boot; then
     mount -o remount,ro /boot
+fi
+
 mount -o remount,ro "$ROOT" || {
     echo "Failed to remount $ROOT read-only, possibly because of an open file."
     echo "The best thing to do would be to reboot now"
     exit $?
 }
+
 exit 0
