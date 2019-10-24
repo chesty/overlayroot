@@ -6,7 +6,7 @@ I use this for my Raspberry Pi, but it should work on any Debian or derivative.
 The root file system on the sd-card is mounted read-only on /overlay/lower, and / is a
 read-write copy on write overlay.
 
-There are two sets of instructions below: [Raspbian](#Raspbian) and [Ubuntu for ARM](#Ubuntu_for_ARM).
+There are two sets of instructions below: [Raspbian](#raspbian) and [Ubuntu for ARM](#ubuntu-for-arm).
 
 ## Raspbian
 
@@ -43,7 +43,7 @@ then rerun
 ```bash
 sudo mkinitramfs -o /boot/init.gz
 ```
-Now skip down to [all distributions](#all_distributions) to finish the installation.
+Now skip down to [all distributions](#all-distributions) to finish the installation.
 
 ## Ubuntu for ARM
 
@@ -67,7 +67,7 @@ then run
 sudo update-initramfs -k $(uname -r) -u
 ```
 
-Now continue to [all distributions](#all_distributions) to finish the installation.
+Now continue to [all distributions](#all-distributions) to finish the installation.
 
 ## all distributions
 
