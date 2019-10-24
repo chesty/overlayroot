@@ -6,6 +6,10 @@ I use this for my Raspberry Pi, but it should work on any Debian or derivative.
 The root file system on the sd-card is mounted read-only on /overlay/lower, and / is a
 read-write copy on write overlay.
 
+There are two sets of instructions below: [Raspbian](#Raspbian) and [Ubuntu for ARM](#Ubuntu_for_ARM).
+
+## Raspbian
+
 It uses initramfs. Stock Raspbian doesn't use one so step one would be to get initramfs working. 
 Something like:
 
@@ -39,6 +43,33 @@ then rerun
 ```bash
 sudo mkinitramfs -o /boot/init.gz
 ```
+Now skip down to [all distributions](#all_distributions) to finish the installation.
+
+## Ubuntu for ARM
+
+Add the following line to /etc/initramfs-tools/modules
+```
+overlay
+```
+
+Copy the following files
+- hooks-overlay to /etc/initramfs-tools/hooks/
+- init-bottom-overlay to /etc/initramfs-tools/scripts/init-bottom/
+
+install busybox-static
+```bash
+sudo apt-get install busybox-static
+```
+
+then run
+
+```bash
+sudo update-initramfs -k $(uname -r) -u
+```
+
+Now continue to [all distributions](#all_distributions) to finish the installation.
+
+## all distributions
 
 add to .bashrc
 
@@ -72,10 +103,16 @@ It's probably a good idea to reboot now for 2 reasons:
 - leaving /overlay/lower read-write could cause file corruption on power loss. 
 - to test it still boots ok after the changes you've just made.
 
-Whenever the kernel is updated you need to rerun 
+Whenever the kernel is updated, for Raspbian you need to rerun 
 
 ```bash
 sudo mkinitramfs -o /boot/init.gz
+```
+
+and for Ubuntu for ARM
+
+```bash
+sudo update-initramfs -k $(uname -r) -u
 ```
 
 TODO: see if there's a hook to automatically run `sudo mkinitramfs -o /boot/init.gz` 
