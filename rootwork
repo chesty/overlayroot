@@ -56,11 +56,13 @@ test_mountpoints () {
 }
 
 mount -o remount,rw "$ROOT" || { echo "error remounting $ROOT rw"; exit 1; }
-if is_mounted /boot; then
-    mount -o remount,rw /boot || { echo "error remounting /boot rw"; exit 1; }
-fi
+for DIR in boot boot/firmware; do
+    if is_mounted "/$DIR"; then
+        mount -o remount,rw "/$DIR" || { echo "error remounting \"/$DIR\" rw"; exit 1; }
+    fi
+done
 
-for DIR in boot run; do
+for DIR in boot boot/firmware run; do
     if test_mountpoints "/$DIR" "$ROOT/$DIR"; then
         mount --rbind "/$DIR" "$ROOT/$DIR"
     fi
@@ -90,15 +92,17 @@ fi
 
 # with mount --rbind /run $ROOT/run, umounting $ROOT/run is problematic as it's busy and if you umount -lf it umounts directories in /run/.
 # I think because / is an overlay of $ROOT. So we don't unmount $ROOT/run
-for DIR in boot; do
+for DIR in boot/firmware boot; do
     if is_mounted "$ROOT/$DIR"; then
         umount -lf "$ROOT/$DIR"
     fi
 done
 
-if is_mounted /boot; then
-    mount -o remount,ro /boot
-fi
+for DIR in boot/firmware boot; do
+    if is_mounted "/$DIR"; then
+        mount -o remount,ro "/$DIR"
+    fi
+done
 
 mount -o remount,ro "$ROOT" || {
     echo "Failed to remount $ROOT read-only, possibly because of an open file."
